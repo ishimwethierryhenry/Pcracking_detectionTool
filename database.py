@@ -1,4 +1,4 @@
-# database.py
+# database.py - FIXED VERSION WITH user_agent SUPPORT
 import sqlite3
 from datetime import datetime
 
@@ -47,7 +47,7 @@ def init_db():
         audit_time INTEGER
     )""")
 
-    # login attempts logs
+    # login attempts logs - UPDATED WITH user_agent
     c.execute("""
     CREATE TABLE IF NOT EXISTS login_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +55,8 @@ def init_db():
         ip TEXT,
         status TEXT,
         fingerprint TEXT,
-        timestamp TEXT
+        timestamp TEXT,
+        user_agent TEXT
     )""")
 
     # detection alerts
@@ -162,20 +163,30 @@ def clear_jtr_results():
     conn.commit()
     conn.close()
 
-# logs & alerts
-def insert_login_log(username, ip, status, fingerprint):
+# logs & alerts - FIXED WITH user_agent SUPPORT
+def insert_login_log(username, ip, status, fingerprint, user_agent=None):
+    """Insert login log with optional user_agent parameter."""
     conn = get_conn()
     c = conn.cursor()
-    c.execute("INSERT INTO login_logs (username, ip, status, fingerprint, timestamp) VALUES (?, ?, ?, ?, ?)",
-              (username, ip, status, fingerprint, datetime.utcnow().isoformat()))
+    c.execute("""INSERT INTO login_logs 
+                 (username, ip, status, fingerprint, timestamp, user_agent) 
+                 VALUES (?, ?, ?, ?, ?, ?)""",
+              (username, ip, status, fingerprint, datetime.utcnow().isoformat(), user_agent))
     conn.commit()
     conn.close()
 
 def fetch_recent_logs(limit=200):
+    """Fetch recent logs with user_agent if available."""
     conn = get_conn()
     c = conn.cursor()
-    c.execute("SELECT username, ip, status, timestamp FROM login_logs ORDER BY id DESC LIMIT ?", (limit,))
-    rows = c.fetchall()
+    # Check if user_agent column exists
+    try:
+        c.execute("SELECT username, ip, status, timestamp, user_agent FROM login_logs ORDER BY id DESC LIMIT ?", (limit,))
+        rows = c.fetchall()
+    except sqlite3.OperationalError:
+        # Fallback if user_agent column doesn't exist yet
+        c.execute("SELECT username, ip, status, timestamp FROM login_logs ORDER BY id DESC LIMIT ?", (limit,))
+        rows = c.fetchall()
     conn.close()
     return rows
 

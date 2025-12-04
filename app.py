@@ -1,4 +1,4 @@
-# app.py
+# app.py - FIXED VERSION
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from database import init_db, insert_user, get_user_by_username, store_plaintext, delete_plaintext_for_user, fetch_pcfg_rows, fetch_jtr_rows, fetch_recent_alerts, fetch_recent_logs, insert_login_log, set_config, get_config
 from utils import hash_password_sha512, verify_password_sha512, fingerprint_password
@@ -71,24 +71,56 @@ def login():
         username = request.form.get("username","").strip()
         password = request.form.get("password","")
         ip = request.headers.get("X-Forwarded-For") or request.remote_addr
-
+        user_agent = request.headers.get("User-Agent", "Unknown")
+        
         row = get_user_by_username(username)
         fingerprint = fingerprint_password(password)
+        
+        # ML Risk Scoring
+        try:
+            import sys
+            sys.path.insert(0, 'ml')
+            from risk_scorer import score_login_attempt
+            
+            risk_data = score_login_attempt(ip, username, "pending", fingerprint, user_agent)
+            risk_score = risk_data.get('risk_score', 0)
+            classification = risk_data.get('classification', 'unknown')
+            
+            # Block high-risk IPs (>= 90)
+            if risk_score >= 90:
+                insert_login_log(username, ip, f"blocked_ml_risk_{classification}", fingerprint, user_agent)
+                flash(f"⚠️ Login blocked: High risk detected (Score: {risk_score}/100)", "error")
+                print(f"[ML BLOCK] IP {ip} blocked - Risk: {risk_score}, Type: {classification}")
+                return redirect(url_for("login"))
+            
+            # Log medium-high risk
+            if risk_score >= 60:
+                print(f"[ML WARNING] IP {ip} - Risk: {risk_score}/100, Type: {classification}")
+                
+        except Exception as e:
+            print(f"[ML Error] {e}")
+            risk_score = 0
+            classification = "unknown"
 
         if not row:
             # log fail, single increment
-            insert_login_log(username, ip, "fail_no_user", fingerprint)
+            insert_login_log(username, ip, "fail_no_user", fingerprint, user_agent)
             flash("invalid credentials", "error")
             return redirect(url_for("login"))
 
         user_id, uname, stored_hash = row
         if not verify_password_sha512(password, stored_hash):
-            insert_login_log(username, ip, "fail_wrong_password", fingerprint)
+            insert_login_log(username, ip, "fail_wrong_password", fingerprint, user_agent)
             flash("invalid credentials", "error")
             return redirect(url_for("login"))
 
         # success
-        insert_login_log(username, ip, "success", fingerprint)
+        insert_login_log(username, ip, "success", fingerprint, user_agent)
+        
+        # Log successful login with risk score
+        if risk_score > 0:
+            print(f"[LOGIN] User: {username}, IP: {ip}, Risk: {risk_score}/100, Type: {classification}")
+        
         session["user_id"] = user_id
         session["username"] = username
         if username == "admin":
@@ -171,11 +203,13 @@ def simulate_page():
 
 @app.route("/check_password", methods=["GET","POST"])
 def check_password():
+    """Enhanced password strength checker with comprehensive analysis."""
     result = None
     if request.method == "POST":
         pwd = request.form.get("password","")
-        guesses, pattern = estimate_guesses(pwd)
-        result = {"guesses": guesses, "pattern": pattern}
+        from pcfg_utils import analyze_password_comprehensive
+        result = analyze_password_comprehensive(pwd)
+        result['password'] = pwd
     return render_template("check_password.html", result=result)
 
 # static route for uploads if needed (not used)

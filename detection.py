@@ -1,4 +1,4 @@
-# detection.py
+# detection.py - FIXED VERSION
 from datetime import datetime, timedelta
 from database import fetch_recent_logs, insert_alert, get_last_alert_time
 
@@ -18,7 +18,15 @@ def run_detection_once():
     # BRUTE FORCE: count failed attempts per IP in window
     ip_counts = {}
     for row in logs:
-        username, ip, status, ts = row
+        # FIXED: Handle both 4-column (old) and 5-column (new with user_agent) formats
+        if len(row) >= 5:
+            username, ip, status, ts, user_agent = row[:5]
+        elif len(row) == 4:
+            username, ip, status, ts = row
+            user_agent = "Unknown"
+        else:
+            continue  # Skip malformed rows
+        
         try:
             t = datetime.fromisoformat(ts)
         except Exception:
@@ -49,7 +57,15 @@ def run_detection_once():
     # Multiple users targeted from same IP suggests credential stuffing
     failed_logs = []
     for row in logs:
-        username, ip, status, ts = row
+        # FIXED: Handle both 4-column and 5-column formats
+        if len(row) >= 5:
+            username, ip, status, ts, user_agent = row[:5]
+        elif len(row) == 4:
+            username, ip, status, ts = row
+            user_agent = "Unknown"
+        else:
+            continue  # Skip malformed rows
+        
         try:
             t = datetime.fromisoformat(ts)
         except Exception:

@@ -1,62 +1,779 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Admin Dashboard</h2>
+
+<style>
+  /* Enhanced Admin Dashboard Styles */
+  .dashboard-header {
+    background: linear-gradient(135deg, #C41230 0%, #8a0c20 100%);
+    color: white;
+    padding: 40px;
+    border-radius: 12px;
+    margin-bottom: 40px;
+    box-shadow: 0 6px 25px rgba(196, 18, 48, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .dashboard-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="none"/><circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.05)" stroke-width="2" fill="none"/></svg>');
+    pointer-events: none;
+  }
+  
+  .dashboard-header h2 {
+    margin: 0;
+    font-size: 36px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .dashboard-header p {
+    margin: 12px 0 0 0;
+    opacity: 0.95;
+    font-size: 16px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+  }
+  
+  .controls button, .controls .btn {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 14px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  
+  .controls button[type="submit"] {
+    background: linear-gradient(135deg, #2d7a2d 0%, #1a5a1a 100%);
+    color: white;
+  }
+  
+  .controls button[type="submit"]:hover {
+    background: linear-gradient(135deg, #1a5a1a 0%, #0d3d0d 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(45, 122, 45, 0.4);
+  }
+  
+  .btn {
+    background: linear-gradient(135deg, #C41230 0%, #a00e26 100%);
+    color: white !important;
+  }
+  
+  .btn:hover {
+    background: linear-gradient(135deg, #a00e26 0%, #8a0c20 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(196, 18, 48, 0.4);
+  }
+  
+  /* Stats Cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+  }
+  
+  .stat-card {
+    background: white;
+    padding: 28px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border-left: 5px solid #C41230;
+    transition: all 0.3s ease;
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  }
+  
+  .stat-card.critical {
+    border-left-color: #8a0c20;
+    background: linear-gradient(135deg, #ffffff 0%, #fff5f5 100%);
+  }
+  
+  .stat-card.high {
+    border-left-color: #C41230;
+    background: linear-gradient(135deg, #ffffff 0%, #fff8f5 100%);
+  }
+  
+  .stat-card.medium {
+    border-left-color: #ff6b35;
+    background: linear-gradient(135deg, #ffffff 0%, #fffaf5 100%);
+  }
+  
+  .stat-card.low {
+    border-left-color: #2d7a2d;
+    background: linear-gradient(135deg, #ffffff 0%, #f5fff5 100%);
+  }
+  
+  .stat-value {
+    font-size: 42px;
+    font-weight: bold;
+    margin: 12px 0;
+    color: #1a1a1a;
+  }
+  
+  .stat-label {
+    color: #666;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+  }
+  
+  /* Risk Badge */
+  .risk-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .risk-critical {
+    background: #8a0c20;
+    color: white;
+  }
+  
+  .risk-high {
+    background: #C41230;
+    color: white;
+  }
+  
+  .risk-medium {
+    background: #ff6b35;
+    color: white;
+  }
+  
+  .risk-low {
+    background: #2d7a2d;
+    color: white;
+  }
+  
+  .risk-unknown {
+    background: #666;
+    color: white;
+  }
+  
+  /* Tables */
+  section {
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border-left: 5px solid #C41230;
+  }
+  
+  section h3 {
+    margin-top: 0;
+    color: #1a1a1a;
+    border-bottom: 3px solid #C41230;
+    padding-bottom: 15px;
+    font-size: 24px;
+    position: relative;
+  }
+  
+  section h3::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 80px;
+    height: 3px;
+    background: #1a1a1a;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  thead tr {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  }
+  
+  th {
+    padding: 16px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: white;
+    border-bottom: 2px solid #1a1a1a;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 12px;
+  }
+  
+  td {
+    padding: 16px 14px;
+    border-bottom: 1px solid #e8e8e8;
+    font-size: 14px;
+  }
+  
+  tbody tr {
+    transition: all 0.2s ease;
+  }
+  
+  tbody tr:hover {
+    background: #f8f8f8;
+    transform: scale(1.005);
+  }
+  
+  /* Priority Indicators */
+  .priority-high {
+    background: #fff8f5;
+    border-left: 5px solid #C41230;
+  }
+  
+  .priority-critical {
+    background: #fff5f5;
+    border-left: 5px solid #8a0c20;
+  }
+  
+  /* Strength Bar */
+  .strength-mini-bar {
+    width: 100px;
+    height: 10px;
+    background: #e8e8e8;
+    border-radius: 5px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  
+  .strength-mini-fill {
+    height: 100%;
+    transition: width 0.3s;
+  }
+  
+  .strength-mini-fill.very-weak { background: #8a0c20; }
+  .strength-mini-fill.weak { background: #C41230; }
+  .strength-mini-fill.fair { background: #ff6b35; }
+  .strength-mini-fill.strong { background: #2d7a2d; }
+  .strength-mini-fill.very-strong { background: #1a5a1a; }
+  
+  /* Recommendations */
+  .recommendations-box {
+    background: #fff8f5;
+    border: 1px solid #ffe0e0;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 8px;
+    font-size: 13px;
+    white-space: pre-line;
+  }
+  
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 50px;
+    color: #999;
+  }
+  
+  .empty-state-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    color: #e0e0e0;
+  }
+  
+  .empty-state p {
+    font-size: 16px;
+    color: #666;
+  }
+  
+  /* Details/Summary */
+  details {
+    cursor: pointer;
+  }
+  
+  summary {
+    color: #C41230;
+    font-weight: 600;
+    padding: 8px 0;
+    transition: color 0.3s;
+  }
+  
+  summary:hover {
+    color: #a00e26;
+  }
+  
+  /* Status Indicators */
+  .status-success {
+    color: #2d7a2d;
+    font-weight: 600;
+  }
+  
+  .status-failed {
+    color: #C41230;
+    font-weight: 600;
+  }
+  
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .dashboard-header {
+      padding: 25px;
+    }
+    
+    .dashboard-header h2 {
+      font-size: 28px;
+    }
+    
+    .controls {
+      flex-direction: column;
+    }
+    
+    .controls button,
+    .controls .btn {
+      width: 100%;
+    }
+    
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    section {
+      padding: 20px;
+    }
+    
+    table {
+      font-size: 12px;
+    }
+    
+    th, td {
+      padding: 12px 10px;
+    }
+  }
+</style>
+
+<div class="dashboard-header">
+  <h2>
+    <i class="fas fa-shield-alt" style="margin-right: 12px;"></i>
+    Admin Dashboard
+  </h2>
+  <p>Password Security Management & Monitoring System</p>
+</div>
 
 <div class="controls">
   <form method="post" action="/run_audit" style="display:inline;">
-    <button type="submit">Run Password Audit (John — 30s per user)</button>
+    <button type="submit">
+      <i class="fas fa-search" style="margin-right: 8px;"></i>
+      Run Password Audit
+    </button>
   </form>
-  <a class="btn" href="/simulate">Simulate Attack</a>
-  <a class="btn" href="/check_password">Password Checker</a>
-  <a class="btn" href="/logout">Logout</a>
+  <a class="btn" href="/simulate">
+    <i class="fas fa-bolt" style="margin-right: 8px;"></i>
+    Simulate Attack
+  </a>
+  <a class="btn" href="/check_password">
+    <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
+    Password Checker
+  </a>
+  <a class="btn" href="/logout" style="background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); margin-left: auto;">
+    <i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i>
+    Logout
+  </a>
 </div>
 
+{% if jtr and jtr|length > 0 %}
+<!-- Audit Summary Stats -->
+<div class="stats-grid">
+  {% set total_users = jtr|length %}
+  {% set cracked_users = jtr|selectattr('2', 'equalto', 1)|list|length %}
+  {% set critical_users = jtr|selectattr('6', 'equalto', 'CRITICAL')|list|length if jtr[0]|length > 6 else cracked_users %}
+  {% set high_users = jtr|selectattr('6', 'equalto', 'HIGH')|list|length if jtr[0]|length > 6 else 0 %}
+  {% set medium_users = jtr|selectattr('6', 'equalto', 'MEDIUM')|list|length if jtr[0]|length > 6 else 0 %}
+  {% set low_users = jtr|selectattr('6', 'equalto', 'LOW')|list|length if jtr[0]|length > 6 else (total_users - cracked_users) %}
+  
+  <div class="stat-card">
+    <div class="stat-label">Total Users Audited</div>
+    <div class="stat-value">{{ total_users }}</div>
+  </div>
+  
+  <div class="stat-card critical">
+    <div class="stat-label">
+      <i class="fas fa-exclamation-circle" style="margin-right: 5px;"></i>
+      Critical Risk
+    </div>
+    <div class="stat-value" style="color: #8a0c20;">{{ critical_users }}</div>
+  </div>
+  
+  {% if high_users > 0 %}
+  <div class="stat-card high">
+    <div class="stat-label">
+      <i class="fas fa-exclamation-triangle" style="margin-right: 5px;"></i>
+      High Risk
+    </div>
+    <div class="stat-value" style="color: #C41230;">{{ high_users }}</div>
+  </div>
+  {% endif %}
+  
+  {% if medium_users > 0 %}
+  <div class="stat-card medium">
+    <div class="stat-label">
+      <i class="fas fa-info-circle" style="margin-right: 5px;"></i>
+      Medium Risk
+    </div>
+    <div class="stat-value" style="color: #ff6b35;">{{ medium_users }}</div>
+  </div>
+  {% endif %}
+  
+  <div class="stat-card low">
+    <div class="stat-label">
+      <i class="fas fa-check-circle" style="margin-right: 5px;"></i>
+      Low Risk
+    </div>
+    <div class="stat-value" style="color: #2d7a2d;">{{ low_users }}</div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-label">
+      <i class="fas fa-unlock-alt" style="margin-right: 5px;"></i>
+      Passwords Cracked
+    </div>
+    <div class="stat-value" style="color: #C41230;">{{ cracked_users }}</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Priority Users Section -->
+{% if jtr and jtr|length > 0 %}
 <section>
-  <h3>PCFG Results (recent)</h3>
+  <h3>
+    <i class="fas fa-exclamation-triangle" style="margin-right: 10px;"></i>
+    Priority Users (Action Required)
+  </h3>
+  
+  {% set priority_users = jtr|selectattr('2', 'equalto', 1)|list %}
+  {% if priority_users|length == 0 %}
+    {% set priority_users = jtr|selectattr('6', 'equalto', 'CRITICAL')|list if jtr[0]|length > 6 else [] %}
+  {% endif %}
+  
+  {% if priority_users|length > 0 %}
+  <p style="color: #C41230; font-weight: 600; background: #fff5f5; padding: 12px; border-radius: 6px; border-left: 4px solid #C41230;">
+    <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
+    {{ priority_users|length }} user(s) need immediate attention!
+  </p>
   <table>
-    <thead><tr><th>User</th><th>PCFG guesses</th><th>Pattern</th><th>Time</th></tr></thead>
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Risk Level</th>
+        <th>Status</th>
+        <th>Strength Score</th>
+        <th>Recommendations</th>
+      </tr>
+    </thead>
     <tbody>
-    {% for r in pcfg %}
-      <tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td><td>{{ r[3] }}</td></tr>
+    {% for r in priority_users[:10] %}
+      <tr class="{% if r[6] == 'CRITICAL' %}priority-critical{% elif r[6] == 'HIGH' %}priority-high{% endif %}">
+        <td><strong>{{ r[0] }}</strong></td>
+        <td>
+          {% if r[6] == 'CRITICAL' %}
+            <span class="risk-badge risk-critical">Critical</span>
+          {% elif r[6] == 'HIGH' %}
+            <span class="risk-badge risk-high">High</span>
+          {% else %}
+            <span class="risk-badge risk-unknown">Priority</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if r[2] %}
+            <span class="status-failed">
+              <i class="fas fa-unlock-alt"></i> CRACKED
+            </span>
+          {% else %}
+            <span style="color: #ff6b35;">
+              <i class="fas fa-exclamation-triangle"></i> Weak
+            </span>
+          {% endif %}
+        </td>
+        <td>
+          {% if r|length > 4 and r[4] is number %}
+            <div class="strength-mini-bar">
+              <div class="strength-mini-fill {% if r[4] < 20 %}very-weak{% elif r[4] < 40 %}weak{% elif r[4] < 60 %}fair{% elif r[4] < 80 %}strong{% else %}very-strong{% endif %}" 
+                   style="width: {{ r[4] }}%;"></div>
+            </div>
+            <span style="margin-left: 10px;">{{ r[4] }}/100</span>
+          {% else %}
+            <span style="color: #999;">N/A</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if r|length > 7 and r[7] %}
+            <details>
+              <summary>View Recommendations</summary>
+              <div class="recommendations-box">{{ r[7] }}</div>
+            </details>
+          {% else %}
+            <span style="color: #C41230; font-weight: 600;">Change password immediately!</span>
+          {% endif %}
+        </td>
+      </tr>
     {% endfor %}
     </tbody>
   </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <p><strong>Great news!</strong> No critical issues found.</p>
+  </div>
+  {% endif %}
 </section>
+{% endif %}
 
+<!-- Full Audit Results -->
 <section>
-  <h3>John The Ripper Results (recent)</h3>
+  <h3>
+    <i class="fas fa-chart-bar" style="margin-right: 10px;"></i>
+    Complete Audit Results
+  </h3>
+  
+  {% if jtr and jtr|length > 0 %}
   <table>
-    <thead><tr><th>User</th><th>Guesses</th><th>Cracked?</th><th>Cracked password</th><th>Audit time (ms)</th></tr></thead>
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Guesses</th>
+        <th>Status</th>
+        {% if jtr[0]|length > 4 %}
+        <th>Strength Score</th>
+        <th>Entropy</th>
+        <th>Risk Level</th>
+        {% endif %}
+        <th>Audit Time (ms)</th>
+      </tr>
+    </thead>
     <tbody>
     {% for r in jtr %}
-      <tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ 'Yes' if r[2] else 'No' }}</td><td>{{ r[3] }}</td><td>{{ r[4] }}</td></tr>
+      <tr class="{% if r[2] %}priority-critical{% elif r[6] == 'CRITICAL' and r[0]|length > 6 %}priority-critical{% endif %}">
+        <td><strong>{{ r[0] }}</strong></td>
+        <td>{{ "{:,}".format(r[1]) if r[1] is number else r[1] }}</td>
+        <td>
+          {% if r[2] %}
+            <span class="status-failed">
+              <i class="fas fa-unlock-alt"></i> Cracked
+            </span>
+            {% if r[3] %}
+              <br><small style="color: #999;">Password: {{ r[3] }}</small>
+            {% endif %}
+          {% else %}
+            <span class="status-success">
+              <i class="fas fa-lock"></i> Not Cracked
+            </span>
+          {% endif %}
+        </td>
+        {% if r|length > 4 %}
+        <td>
+          {% if r[4] is number %}
+            <div class="strength-mini-bar">
+              <div class="strength-mini-fill {% if r[4] < 20 %}very-weak{% elif r[4] < 40 %}weak{% elif r[4] < 60 %}fair{% elif r[4] < 80 %}strong{% else %}very-strong{% endif %}" 
+                   style="width: {{ r[4] }}%;"></div>
+            </div>
+            <span style="margin-left: 10px;">{{ r[4] }}/100</span>
+          {% else %}
+            N/A
+          {% endif %}
+        </td>
+        <td>
+          {% if r|length > 5 and r[5] is number %}
+            {{ "%.1f"|format(r[5]) }} bits
+          {% else %}
+            N/A
+          {% endif %}
+        </td>
+        <td>
+          {% if r|length > 6 and r[6] %}
+            {% if r[6] == 'CRITICAL' %}
+              <span class="risk-badge risk-critical">Critical</span>
+            {% elif r[6] == 'HIGH' %}
+              <span class="risk-badge risk-high">High</span>
+            {% elif r[6] == 'MEDIUM' %}
+              <span class="risk-badge risk-medium">Medium</span>
+            {% elif r[6] == 'LOW' %}
+              <span class="risk-badge risk-low">Low</span>
+            {% else %}
+              <span class="risk-badge risk-unknown">Unknown</span>
+            {% endif %}
+          {% else %}
+            <span class="risk-badge risk-unknown">Unknown</span>
+          {% endif %}
+        </td>
+        {% endif %}
+        <td>{{ r[4] if r|length <= 5 else (r[8] if r|length > 8 else 'N/A') }}</td>
+      </tr>
     {% endfor %}
     </tbody>
   </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      <i class="fas fa-search"></i>
+    </div>
+    <p>No audit results yet. Click "Run Password Audit" to start.</p>
+  </div>
+  {% endif %}
 </section>
 
+<!-- PCFG Results -->
 <section>
-  <h3>Detection Alerts (recent)</h3>
+  <h3>
+    <i class="fas fa-project-diagram" style="margin-right: 10px;"></i>
+    PCFG Analysis Results
+  </h3>
+  {% if pcfg and pcfg|length > 0 %}
   <table>
-    <thead><tr><th>Type</th><th>Details</th><th>Time</th></tr></thead>
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Estimated Guesses</th>
+        <th>Pattern</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
     <tbody>
-    {% for a in alerts %}
-      <tr><td>{{ a[0] }}</td><td>{{ a[1] }}</td><td>{{ a[2] }}</td></tr>
+    {% for r in pcfg %}
+      <tr>
+        <td>{{ r[0] }}</td>
+        <td>{{ "{:,}".format(r[1]) if r[1] is number else r[1] }}</td>
+        <td><code>{{ r[2] }}</code></td>
+        <td>{{ r[3] }}</td>
+      </tr>
     {% endfor %}
     </tbody>
   </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      <i class="fas fa-chart-line"></i>
+    </div>
+    <p>No PCFG analysis data available.</p>
+  </div>
+  {% endif %}
 </section>
 
+<!-- Detection Alerts -->
 <section>
-  <h3>Recent Logs</h3>
+  <h3>
+    <i class="fas fa-bell" style="margin-right: 10px;"></i>
+    Detection Alerts (Recent)
+  </h3>
+  {% if alerts and alerts|length > 0 %}
   <table>
-    <thead><tr><th>User</th><th>IP</th><th>Status</th><th>Time</th></tr></thead>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Details</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
     <tbody>
-    {% for l in logs %}
-      <tr><td>{{ l[0] }}</td><td>{{ l[1] }}</td><td>{{ l[2] }}</td><td>{{ l[3] }}</td></tr>
+    {% for a in alerts[:20] %}
+      <tr>
+        <td>
+          {% if 'BRUTE' in a[0] %}
+            <span class="risk-badge risk-critical">Brute Force</span>
+          {% elif 'CREDENTIAL' in a[0] %}
+            <span class="risk-badge risk-high">Credential Stuffing</span>
+          {% elif 'BOTNET' in a[0] %}
+            <span class="risk-badge risk-high">Botnet Pattern</span>
+          {% else %}
+            <span class="risk-badge risk-medium">{{ a[0] }}</span>
+          {% endif %}
+        </td>
+        <td>{{ a[1] }}</td>
+        <td>{{ a[2] }}</td>
+      </tr>
     {% endfor %}
     </tbody>
   </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <p>No alerts detected. System is secure!</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- Recent Logs -->
+<section>
+  <h3>
+    <i class="fas fa-history" style="margin-right: 10px;"></i>
+    Recent Login Activity
+  </h3>
+  {% if logs and logs|length > 0 %}
+  <table>
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>IP Address</th>
+        <th>Status</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for l in logs[:50] %}
+      <tr>
+        <td>{{ l[0] }}</td>
+        <td><code>{{ l[1] }}</code></td>
+        <td>
+          {% if 'success' in l[2] %}
+            <span class="status-success">
+              <i class="fas fa-check"></i> Success
+            </span>
+          {% elif 'fail' in l[2] %}
+            <span class="status-failed">
+              <i class="fas fa-times"></i> {{ l[2].replace('fail_', '').replace('_', ' ').title() }}
+            </span>
+          {% else %}
+            {{ l[2] }}
+          {% endif %}
+        </td>
+        <td>{{ l[3] }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      <i class="fas fa-file-alt"></i>
+    </div>
+    <p>No login activity recorded yet.</p>
+  </div>
+  {% endif %}
 </section>
 
 {% endblock %}
